@@ -723,14 +723,12 @@ export default function Home() {
         <section className="max-w-6xl mx-auto px-6 pb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">🎯 {selectedBook.title}</h2>
-            {selectedBook.status === 'pending' && (
-              <button
-                onClick={handleProcessBook}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2"
-              >
-                🤖 处理书籍
-              </button>
-            )}
+            <button
+              onClick={handleProcessBook}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2"
+            >
+              🤖 处理书籍
+            </button>
           </div>
           
           {modes.length === 0 ? (
