@@ -5,6 +5,13 @@ import { useState, useEffect, useRef } from 'react'
 const SUPABASE_URL = 'https://nfjzfyxmtuquptbwqlxa.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5manpmeXhtdHVxdXB0YndxbHhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTAyOTEsImV4cCI6MjA5MDg2NjI5MX0.aB6jVdoTnMBYYl980dI4yyDYB3hC9FP98_WLvhTXfPg'
 
+interface User {
+  id: string
+  name: string
+  email: string
+  created_at: string
+}
+
 interface Book {
   id: string
   title: string
@@ -14,6 +21,7 @@ interface Book {
   source_type: string
   file_path: string | null
   created_at: string
+  user_id: string | null
 }
 
 interface ReadingMode {
@@ -32,13 +40,19 @@ const modeLabels: Record<string, { icon: string; color: string }> = {
   dialogue: { icon: '💬', color: 'bg-green-500' }
 }
 
+function generateUserId(): string {
+  return 'user_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
+}
+
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [loginName, setLoginName] = useState('')
+  const [loginEmail, setLoginEmail] = useState('')
   const [books, setBooks] = useState<Book[]>([])
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [modes, setModes] = useState<ReadingMode[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadSource, setUploadSource] = useState<'pdf' | 'url' | 'feishu'>('pdf')
   const [bookTitle, setBookTitle] = useState('')
@@ -46,12 +60,20 @@ export default function Home() {
   const [bookDescription, setBookDescription] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
   const [feishuUrl, setFeishuUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
   useEffect(() => {
-    fetchBooks()
+    checkUser()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      fetchBooks()
+    }
+  }, [user])
 
   useEffect(() => {
     if (selectedBook) {
@@ -59,9 +81,84 @@ export default function Home() {
     }
   }, [selectedBook])
 
+  function checkUser() {
+    const savedUser = localStorage.getItem('reading_agent_user')
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser)
+        setUser(parsedUser)
+      } catch {
+        localStorage.removeItem('reading_agent_user')
+      }
+    } else {
+      setShowLoginModal(true)
+    }
+    setLoading(false)
+  }
+
+  async function handleLogin() {
+    if (!loginName.trim()) {
+      alert('请输入名字')
+      return
+    }
+
+    const newUser: User = {
+      id: generateUserId(),
+      name: loginName.trim(),
+      email: loginEmail.trim() || '',
+      created_at: new Date().toISOString()
+    }
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/users', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(newUser)
+      })
+
+      if (res.ok) {
+        const result = await res.json()
+        const savedUser = result[0] || newUser
+        localStorage.setItem('reading_agent_user', JSON.stringify(savedUser))
+        setUser(savedUser)
+        setShowLoginModal(false)
+      } else {
+        // 即使 API 失败，也保存到本地
+        localStorage.setItem('reading_agent_user', JSON.stringify(newUser))
+        setUser(newUser)
+        setShowLoginModal(false)
+      }
+    } catch {
+      localStorage.setItem('reading_agent_user', JSON.stringify(newUser))
+      setUser(newUser)
+      setShowLoginModal(false)
+    }
+  }
+
+  function handleLogout() {
+    if (confirm('确定要退出登录吗？')) {
+      localStorage.removeItem('reading_agent_user')
+      setUser(null)
+      setShowLoginModal(true)
+      setBooks([])
+      setSelectedBook(null)
+    }
+  }
+
   async function fetchBooks() {
     try {
-      const res = await fetch(SUPABASE_URL + '/rest/v1/books?select=*&order=created_at.desc', {
+      let url = SUPABASE_URL + '/rest/v1/books?select=*&order=created_at.desc'
+      
+      if (user) {
+        url += '&user_id=eq.' + user.id
+      }
+
+      const res = await fetch(url, {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
@@ -69,7 +166,7 @@ export default function Home() {
       })
       const data = await res.json()
       setBooks(data)
-      if (data.length > 0 && !selectedBook) {
+      if (data.length > 0) {
         setSelectedBook(data[0])
       }
     } catch (error) {
@@ -103,10 +200,8 @@ export default function Home() {
       const fileName = Date.now() + '-' + Math.random().toString(36).substring(7) + '.' + fileExt
       
       setUploadProgress(20)
-      
       const arrayBuffer = await file.arrayBuffer()
       const uint8Array = new Uint8Array(arrayBuffer)
-      
       setUploadProgress(40)
 
       const storageRes = await fetch(SUPABASE_URL + '/storage/v1/object/books/' + fileName, {
@@ -124,7 +219,6 @@ export default function Home() {
       }
 
       setUploadProgress(70)
-
       const filePath = SUPABASE_URL + '/storage/v1/object/public/books/' + fileName
 
       const bookRes = await fetch(SUPABASE_URL + '/rest/v1/books', {
@@ -141,22 +235,19 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'pdf',
           file_path: filePath,
-          status: 'processing'
+          status: 'processing',
+          user_id: user?.id
         })
       })
 
       const newBook = await bookRes.json()
       setUploadProgress(90)
-
       await createReadingModes(newBook[0].id)
-
       setUploadProgress(100)
-
       await fetchBooks()
       setShowUploadModal(false)
       resetForm()
-
-      alert('📚 书籍上传成功！我开始处理了，处理完成后会通知你～')
+      alert('📚 书籍上传成功！')
 
     } catch (error) {
       console.error('Upload error:', error)
@@ -211,7 +302,8 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'url',
           source_url: sourceUrl,
-          status: 'processing'
+          status: 'processing',
+          user_id: user?.id
         })
       })
 
@@ -253,7 +345,8 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'feishu_doc',
           feishu_token: feishuUrl,
-          status: 'processing'
+          status: 'processing',
+          user_id: user?.id
         })
       })
 
@@ -292,36 +385,83 @@ export default function Home() {
     }
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) {
-      uploadFile(file)
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">加载中...</div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero */}
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl max-w-md w-full p-8 border border-white/10">
+            <div className="text-center mb-8">
+              <span className="text-6xl">🦞</span>
+              <h2 className="text-2xl font-bold text-white mt-4">欢迎使用</h2>
+              <p className="text-purple-300 mt-2">全能读书Agent</p>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="你的名字"
+                value={loginName}
+                onChange={e => setLoginName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg"
+                autoFocus
+              />
+              <input
+                type="email"
+                placeholder="邮箱（可选）"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                onClick={handleLogin}
+                className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition text-lg"
+              >
+                开始使用 →
+              </button>
+            </div>
+
+            <p className="text-slate-500 text-sm text-center mt-6">
+              你的数据将安全存储，仅限你自己访问
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
-        <div className="relative max-w-6xl mx-auto px-6 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-            📚 全能读书<span className="text-purple-400">Agent</span>
-          </h1>
-          <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-            上传书籍，选择阅读模式，AI 帮你深度解读
-          </p>
-          <div className="flex justify-center gap-4 mt-8">
-            <button 
-              onClick={() => setShowUploadModal(true)}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition flex items-center gap-2"
-            >
-              📤 上传书籍
-            </button>
-            <a href="https://github.com/echoic24/reading-agent"
-               className="px-6 py-3 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-600 transition">
-              📦 GitHub
-            </a>
+        <div className="absolute inset-0 opacity-30" style={{backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')" }} />
+        <div className="relative max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">📚 全能读书<span className="text-purple-400">Agent</span></h1>
+              <p className="text-purple-200 text-sm mt-1">Hi, {user?.name}！</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowUploadModal(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition flex items-center gap-2"
+              >
+                📤 上传书籍
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition"
+                title="退出登录"
+              >
+                🚪
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -329,7 +469,7 @@ export default function Home() {
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-6 border border-white/10">
+          <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-6 border border-white/10 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">📤 上传书籍</h2>
               <button 
@@ -343,27 +483,26 @@ export default function Home() {
             {/* Source Type Tabs */}
             <div className="flex gap-2 mb-6">
               {[
-                { id: 'pdf', label: 'PDF文件', icon: '📄' },
-                { id: 'url', label: '网页链接', icon: '🔗' },
-                { id: 'feishu', label: '飞书文档', icon: '📝' }
+                { id: 'pdf', label: 'PDF', icon: '📄' },
+                { id: 'url', label: '链接', icon: '🔗' },
+                { id: 'feishu', label: '飞书', icon: '📝' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setUploadSource(tab.id as any)}
-                  className={'flex-1 py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ' + (
+                  className={'flex-1 py-2 rounded-lg font-medium transition ' + (
                     uploadSource === tab.id 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   )}
                 >
-                  <span>{tab.icon}</span>
-                  <span className="text-sm">{tab.label}</span>
+                  {tab.icon} {tab.label}
                 </button>
               ))}
             </div>
 
             {/* Book Info */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 mb-6">
               <input
                 type="text"
                 placeholder="书名（可选）"
@@ -377,13 +516,6 @@ export default function Home() {
                 value={bookAuthor}
                 onChange={e => setBookAuthor(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <textarea
-                placeholder="书籍描述（可选）"
-                value={bookDescription}
-                onChange={e => setBookDescription(e.target.value)}
-                rows={2}
-                className="w-full px-4 py-2 bg-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
               />
             </div>
 
@@ -404,22 +536,17 @@ export default function Home() {
                   ref={fileInputRef}
                   type="file"
                   accept=".pdf"
-                  onChange={handleFileSelect}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f) }}
                   className="hidden"
                 />
                 <div className="text-5xl mb-3">📄</div>
                 <p className="text-white font-medium">
-                  {uploading ? '上传中...' : '点击或拖拽 PDF 文件到这里'}
+                  {uploading ? '上传中...' : '点击或拖拽 PDF 文件'}
                 </p>
-                <p className="text-slate-400 text-sm mt-1">支持 PDF 格式</p>
-                
                 {uploading && (
                   <div className="mt-4">
                     <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-purple-500 transition-all duration-300"
-                        style={{ width: uploadProgress + '%' }}
-                      />
+                      <div className="h-full bg-purple-500 transition-all" style={{width: uploadProgress + '%'}} />
                     </div>
                     <p className="text-purple-400 text-sm mt-2">{uploadProgress}%</p>
                   </div>
@@ -468,16 +595,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Library Section */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <h2 className="text-3xl font-bold text-white mb-8">📚 我的书库</h2>
+      {/* Library */}
+      <section className="max-w-6xl mx-auto px-6 py-8">
+        <h2 className="text-2xl font-bold text-white mb-6">📚 我的书库</h2>
         
-        {loading ? (
-          <div className="text-purple-300">加载中...</div>
-        ) : books.length === 0 ? (
+        {books.length === 0 ? (
           <div className="bg-white/5 rounded-xl p-12 text-center border border-white/10">
             <span className="text-6xl">📭</span>
-            <p className="text-purple-300 mt-4">书库是空的，上传第一本书吧！</p>
+            <p className="text-purple-300 mt-4">还没有书籍，上传第一本吧！</p>
             <button
               onClick={() => setShowUploadModal(true)}
               className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
@@ -490,31 +615,28 @@ export default function Home() {
             {books.map(book => (
               <div 
                 key={book.id}
+                onClick={() => setSelectedBook(book)}
                 className={'bg-white/5 rounded-xl overflow-hidden border transition cursor-pointer ' + (
                   selectedBook?.id === book.id 
                     ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
                     : 'border-white/10 hover:border-purple-400'
                 )}
-                onClick={() => setSelectedBook(book)}
               >
-                <div className="bg-gradient-to-br from-purple-600 to-blue-600 h-40 flex items-center justify-center">
-                  <span className="text-6xl">📖</span>
+                <div className="bg-gradient-to-br from-purple-600 to-blue-600 h-32 flex items-center justify-center">
+                  <span className="text-5xl">📖</span>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-white">{book.title}</h3>
-                  <p className="text-purple-300 mt-1">{book.author}</p>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-white truncate">{book.title}</h3>
+                  <p className="text-purple-300 text-sm mt-1 truncate">{book.author}</p>
                   <div className="flex items-center gap-2 mt-3">
-                    <span className={'px-2 py-1 rounded text-xs font-medium ' + (
+                    <span className={'px-2 py-1 rounded text-xs ' + (
                       book.status === 'completed' 
                         ? 'bg-green-500/20 text-green-400' 
                         : book.status === 'processing' 
                           ? 'bg-yellow-500/20 text-yellow-400'
                           : 'bg-slate-500/20 text-slate-400'
                     )}>
-                      {book.status === 'completed' ? '✓ 已完成' : book.status === 'processing' ? '⏳ 处理中' : '📥 待处理'}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {book.source_type === 'pdf' ? '📄 PDF' : book.source_type === 'url' ? '🔗 链接' : '📝 飞书'}
+                      {book.status === 'completed' ? '✓ 完成' : book.status === 'processing' ? '⏳ 处理中' : '📥 新书'}
                     </span>
                   </div>
                 </div>
@@ -524,14 +646,11 @@ export default function Home() {
         )}
       </section>
 
-      {/* Reading Modes Section */}
+      {/* Reading Modes */}
       {selectedBook && modes.length > 0 && (
-        <section className="max-w-6xl mx-auto px-6 pb-16">
-          <h2 className="text-3xl font-bold text-white mb-8">
-            🎯 {selectedBook.title}
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
+        <section className="max-w-6xl mx-auto px-6 pb-12">
+          <h2 className="text-2xl font-bold text-white mb-6">🎯 {selectedBook.title}</h2>
+          <div className="grid md:grid-cols-2 gap-4">
             {modes.map(mode => {
               const config = modeLabels[mode.mode_type] || { icon: '📄', color: 'bg-gray-500' }
               return (
@@ -540,33 +659,22 @@ export default function Home() {
                   href={mode.feishu_doc_url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-purple-400 transition group"
+                  className="bg-white/5 rounded-xl p-5 border border-white/10 hover:border-purple-400 transition group"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-4">
                     <div className={config.color + ' w-12 h-12 rounded-lg flex items-center justify-center text-2xl'}>
                       {config.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition">
-                        {mode.title}
-                      </h3>
-                      <p className="text-purple-300 mt-1">{mode.description}</p>
-                      <div className="flex items-center gap-2 mt-3">
-                        <span className={'px-2 py-1 rounded text-xs font-medium ' + (
-                          mode.status === 'completed' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : mode.status === 'ready'
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-yellow-500/20 text-yellow-400'
-                        )}>
-                          {mode.status === 'completed' ? '✓ 已完成' 
-                           : mode.status === 'ready' ? '🚀 就绪'
-                           : '⏳ 处理中'}
-                        </span>
-                        {mode.feishu_doc_url && (
-                          <span className="text-purple-400 text-sm">→ 查看文档</span>
-                        )}
-                      </div>
+                      <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition">{mode.title}</h3>
+                      <p className="text-purple-300 text-sm mt-1">{mode.description}</p>
+                      <span className={'inline-block px-2 py-1 rounded text-xs mt-2 ' + (
+                        mode.status === 'completed' ? 'bg-green-500/20 text-green-400' 
+                        : mode.status === 'ready' ? 'bg-blue-500/20 text-blue-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
+                      )}>
+                        {mode.status === 'completed' ? '✓ 已完成' : mode.status === 'ready' ? '🚀 就绪' : '⏳ 处理中'}
+                      </span>
                     </div>
                   </div>
                 </a>
@@ -576,13 +684,9 @@ export default function Home() {
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-8">
+      <footer className="border-t border-white/10 py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 text-center text-purple-300">
           <p>🦞 Powered by Clawster & OpenClaw</p>
-          <p className="mt-2 text-sm opacity-70">
-            飞书 × Supabase × Vercel
-          </p>
         </div>
       </footer>
     </div>
