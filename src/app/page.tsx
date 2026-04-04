@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 
 const SUPABASE_URL = 'https://nfjzfyxmtuquptbwqlxa.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5manpmeXhtdHVxdXB0YndxbHhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTAyOTEsImV4cCI6MjA5MDg2NjI5MX0.aB6jVdoTnMBYYl980dI4yyDYB3hC9FP98_WLvhTXfPg'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hanpmeXhtdHVxdXB0YndxbHhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTAyOTEsImV4cCI6MjA5MDg2NjI5MX0.aB6jVdoTnMBYYl980dI4yyDYB3hC9FP98_WLvhTXfPg'
 
 interface User {
   id: string
@@ -38,6 +38,13 @@ const modeLabels: Record<string, { icon: string; color: string }> = {
   deep_analysis: { icon: '📖', color: 'bg-blue-500' },
   topic_research: { icon: '🔍', color: 'bg-purple-500' },
   dialogue: { icon: '💬', color: 'bg-green-500' }
+}
+
+const modeDescriptions: Record<string, string> = {
+  speed_read: '快速提炼书籍核心要点',
+  deep_analysis: '深入分析每章核心内容',
+  topic_research: '围绕核心主题深入研究',
+  dialogue: '与AI对话，深入探讨书籍内容'
 }
 
 function generateUserId(): string {
@@ -128,7 +135,6 @@ export default function Home() {
         setUser(savedUser)
         setShowLoginModal(false)
       } else {
-        // 即使 API 失败，也保存到本地
         localStorage.setItem('reading_agent_user', JSON.stringify(newUser))
         setUser(newUser)
         setShowLoginModal(false)
@@ -166,7 +172,7 @@ export default function Home() {
       })
       const data = await res.json()
       setBooks(data)
-      if (data.length > 0) {
+      if (data.length > 0 && !selectedBook) {
         setSelectedBook(data[0])
       }
     } catch (error) {
@@ -235,19 +241,23 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'pdf',
           file_path: filePath,
-          status: 'processing',
+          status: 'pending',
           user_id: user?.id
         })
       })
 
       const newBook = await bookRes.json()
       setUploadProgress(90)
+      
+      // 创建阅读模式
       await createReadingModes(newBook[0].id)
+      
       setUploadProgress(100)
       await fetchBooks()
       setShowUploadModal(false)
       resetForm()
-      alert('📚 书籍上传成功！')
+      
+      alert('📚 书籍上传成功！\n\n接下来你可以：\n1. 点击"处理书籍"让我开始分析\n2. 或先查看其他内容，稍后再处理')
 
     } catch (error) {
       console.error('Upload error:', error)
@@ -259,14 +269,9 @@ export default function Home() {
   }
 
   async function createReadingModes(bookId: string) {
-    const modes = [
-      { mode_type: 'speed_read', title: '速读提炼', description: '快速提炼书籍核心要点', status: 'pending' },
-      { mode_type: 'deep_analysis', title: '深度解读', description: '深入分析每章核心内容', status: 'pending' },
-      { mode_type: 'topic_research', title: '主题研究', description: '围绕核心主题深入研究', status: 'pending' },
-      { mode_type: 'dialogue', title: '对话共读', description: '与AI对话，深入探讨书籍内容', status: 'ready' }
-    ]
-
-    for (const mode of modes) {
+    const modeTypes = ['speed_read', 'deep_analysis', 'topic_research', 'dialogue']
+    
+    for (const modeType of modeTypes) {
       await fetch(SUPABASE_URL + '/rest/v1/reading_modes', {
         method: 'POST',
         headers: {
@@ -274,9 +279,55 @@ export default function Home() {
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ ...mode, book_id: bookId })
+        body: JSON.stringify({
+          mode_type: modeType,
+          title: modeType === 'speed_read' ? '速读提炼' 
+               : modeType === 'deep_analysis' ? '深度解读'
+               : modeType === 'topic_research' ? '主题研究'
+               : '对话共读',
+          description: modeDescriptions[modeType],
+          status: 'pending',
+          book_id: bookId
+        })
       })
     }
+  }
+
+  async function handleProcessBook() {
+    if (!selectedBook) return
+    
+    const confirmed = confirm('📖 开始处理《' + selectedBook.title + '》？\n\n处理步骤：\n1. 解析书籍内容\n2. 生成速读提炼\n3. 生成深度解读\n4. 生成主题研究\n\n处理完成后会自动创建飞书文档。')
+    
+    if (!confirmed) return
+
+    // 更新状态为处理中
+    await fetch(SUPABASE_URL + '/rest/v1/books?id=eq.' + selectedBook.id, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: 'processing' })
+    })
+
+    // 更新模式状态
+    for (const mode of modes) {
+      await fetch(SUPABASE_URL + '/rest/v1/reading_modes?id=eq.' + mode.id, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'processing' })
+      })
+    }
+
+    await fetchBooks()
+    await fetchModes(selectedBook.id)
+
+    alert('📚 正在处理《' + selectedBook.title + '》...\n\n请在飞书中告诉我：\n"帮我处理《' + selectedBook.title + '》"\n\n我会自动开始解析和处理！')
   }
 
   async function handleUrlUpload() {
@@ -302,7 +353,7 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'url',
           source_url: sourceUrl,
-          status: 'processing',
+          status: 'pending',
           user_id: user?.id
         })
       })
@@ -312,7 +363,7 @@ export default function Home() {
       await fetchBooks()
       setShowUploadModal(false)
       resetForm()
-      alert('🔗 链接添加成功！')
+      alert('🔗 链接添加成功！\n\n在飞书中告诉我："帮我处理这本书"')
 
     } catch (error) {
       console.error('URL upload error:', error)
@@ -345,7 +396,7 @@ export default function Home() {
           description: bookDescription || '暂无描述',
           source_type: 'feishu_doc',
           feishu_token: feishuUrl,
-          status: 'processing',
+          status: 'pending',
           user_id: user?.id
         })
       })
@@ -633,9 +684,9 @@ export default function Home() {
                         ? 'bg-green-500/20 text-green-400' 
                         : book.status === 'processing' 
                           ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-slate-500/20 text-slate-400'
+                          : 'bg-blue-500/20 text-blue-400'
                     )}>
-                      {book.status === 'completed' ? '✓ 完成' : book.status === 'processing' ? '⏳ 处理中' : '📥 新书'}
+                      {book.status === 'completed' ? '✓ 已完成' : book.status === 'processing' ? '⏳ 处理中' : '📥 待处理'}
                     </span>
                   </div>
                 </div>
@@ -646,42 +697,70 @@ export default function Home() {
       </section>
 
       {/* Reading Modes */}
-      {selectedBook && modes.length > 0 && (
-        <section className="max-w-6xl mx-auto px-6 pb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">🎯 {selectedBook.title}</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {modes.map(mode => {
-              const config = modeLabels[mode.mode_type] || { icon: '📄', color: 'bg-gray-500' }
-              return (
-                <a 
-                  key={mode.id}
-                  href={mode.feishu_doc_url || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white/5 rounded-xl p-5 border border-white/10 hover:border-purple-400 transition group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={config.color + ' w-12 h-12 rounded-lg flex items-center justify-center text-2xl'}>
-                      {config.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition">{mode.title}</h3>
-                      <p className="text-purple-300 text-sm mt-1">{mode.description}</p>
-                      <span className={'inline-block px-2 py-1 rounded text-xs mt-2 ' + (
-                        mode.status === 'completed' ? 'bg-green-500/20 text-green-400' 
-                        : mode.status === 'ready' ? 'bg-blue-500/20 text-blue-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
-                      )}>
-                        {mode.status === 'completed' ? '✓ 已完成' : mode.status === 'ready' ? '🚀 就绪' : '⏳ 处理中'}
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              )
-            })}
+      {selectedBook && (
+        <section className="max-w-6xl mx-auto px-6 pb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">🎯 {selectedBook.title}</h2>
+            {selectedBook.status === 'pending' && (
+              <button
+                onClick={handleProcessBook}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2"
+              >
+                🤖 处理书籍
+              </button>
+            )}
           </div>
+          
+          {modes.length === 0 ? (
+            <p className="text-purple-300">加载中...</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {modes.map(mode => {
+                const config = modeLabels[mode.mode_type] || { icon: '📄', color: 'bg-gray-500' }
+                return (
+                  <a 
+                    key={mode.id}
+                    href={mode.feishu_doc_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 rounded-xl p-5 border border-white/10 hover:border-purple-400 transition group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={config.color + ' w-12 h-12 rounded-lg flex items-center justify-center text-2xl'}>
+                        {config.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition">{mode.title}</h3>
+                        <p className="text-purple-300 text-sm mt-1">{mode.description}</p>
+                        <span className={'inline-block px-2 py-1 rounded text-xs mt-2 ' + (
+                          mode.status === 'completed' ? 'bg-green-500/20 text-green-400' 
+                          : mode.status === 'ready' ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                        )}>
+                          {mode.status === 'completed' ? '✓ 已完成' : mode.status === 'ready' ? '🚀 就绪' : '⏳ 待处理'}
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          )}
         </section>
       )}
+
+      {/* Help Section */}
+      <section className="max-w-6xl mx-auto px-6 pb-12">
+        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+          <h3 className="text-lg font-bold text-white mb-3">💡 使用提示</h3>
+          <ul className="text-purple-300 text-sm space-y-2">
+            <li>• 上传 PDF 后，点击"🤖 处理书籍"按钮</li>
+            <li>• 或在飞书告诉我："帮我处理《书名》"</li>
+            <li>• 我会自动解析内容并生成阅读笔记</li>
+            <li>• 处理完成后，点击各模式查看飞书文档</li>
+          </ul>
+        </div>
+      </section>
 
       <footer className="border-t border-white/10 py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 text-center text-purple-300">
