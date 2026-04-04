@@ -71,7 +71,7 @@ function generateUserId(): string {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
-  const [showLoginModal, setShowLoginModal] = useState(true)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const [loginName, setLoginName] = useState('')
   const [loginEmail, setLoginEmail] = useState('')
   const [books, setBooks] = useState<Book[]>([])
