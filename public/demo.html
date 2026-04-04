@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💡 智慧之灯 -《Lamp of Wisdom》完整读书笔记</title>
+  <style>
+    :root {
+      --primary: #f59e0b;
+      --primary-dark: #d97706;
+      --secondary: #1e293b;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--card-bg);
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 1rem;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    nav a:hover {
+      background: var(--primary);
+      color: var(--secondary);
+    }
+
+    nav a.active {
+      background: var(--primary);
+      color: var(--secondary);
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border-radius: 20px;
+      padding: 4rem 3rem;
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(245, 158, 11, 0.3);
+      text-align: center;
+    }
+
+    .hero::before {
+      content: '💡';
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      font-size: 15rem;
+      opacity: 0.1;
+      transform: rotate(15deg);
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .hero .subtitle {
+      font-size: 1.5rem;
+      opacity: 0.95;
+      margin-bottom: 2rem;
+    }
+
+    .hero .meta {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    .hero .meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Section Tabs */
+    .section-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 2px solid transparent;
+      padding: 0.75rem 2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: var(--secondary);
+      border-color: var(--primary);
+    }
+
+    /* Content Sections */
+    .content-section {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-left: 4px solid var(--primary);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    th {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--primary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    /* Quote Blocks */
+    blockquote {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      border-left: 4px solid var(--primary);
+      padding: 2rem 2.5rem;
+      margin: 2rem 0;
+      border-radius: 0 12px 12px 0;
+      font-style: italic;
+      position: relative;
+      font-size: 1.1rem;
+    }
+
+    blockquote::before {
+      content: '"';
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      font-size: 4rem;
+      color: var(--primary);
+      opacity: 0.3;
+      font-family: Georgia, serif;
+    }
+
+    blockquote p {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Highlight Boxes */
+    .highlight {
+      background: rgba(245, 158, 11, 0.15);
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .highlight strong {
+      color: var(--primary);
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      background: var(--primary);
+      color: var(--secondary);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tag.accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .tag.success {
+      background: var(--success);
+      color: white;
+    }
+
+    .tag.danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* Chapter List */
+    .chapter-list {
+      list-style: none;
+      counter-reset: chapter;
+    }
+
+    .chapter-list li {
+      counter-increment: chapter;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+
+    .chapter-list li::before {
+      content: counter(chapter);
+      background: var(--primary);
+      color: var(--secondary);
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+      font-size: 1.2rem;
+    }
+
+    .chapter-list li:last-child {
+      border-bottom: none;
+    }
+
+    .chapter-title {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+    }
+
+    .chapter-desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    /* Headings */
+    h2 {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin: 3rem 0 2rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 3px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    h3 {
+      font-size: 1.8rem;
+      color: var(--text);
+      margin: 2.5rem 0 1.5rem;
+    }
+
+    h4 {
+      font-size: 1.3rem;
+      color: var(--text-muted);
+      margin: 2rem 0 1rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 5rem;
+      padding-top: 3rem;
+      border-top: 2px solid rgba(245, 158, 11, 0.3);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    footer .warning {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid var(--danger);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 3rem;
+      color: #fca5a5;
+    }
+
+    footer .links {
+      margin-top: 2rem;
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    footer .links a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer .links a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero {
+        padding: 3rem 2rem;
+      }
+
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      nav ul {
+        gap: 1rem;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Search Box */
+    .search-box {
+      background: var(--card-bg);
+      border: 2px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .search-box button {
+      background: var(--primary);
+      color: var(--secondary);
+      border: none;
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .search-box button:hover {
+      background: var(--primary-dark);
+      transform: scale(1.05);
+    }
+
+    /* Progress Indicator */
+    .progress-bar {
+      background: rgba(245, 158, 11, 0.2);
+      border-radius: 10px;
+      height: 8px;
+      margin: 2rem 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Navigation -->
+    <nav>
+      <ul>
+        <li><a href="#home" class="active" onclick="showSection('home')">🏠 首页</a></li>
+        <li><a href="#summary" onclick="showSection('summary')">⚡ 速读提炼</a></li>
+        <li><a href="#deep-dive" onclick="showSection('deep-dive')">📖 深度解读</a></li>
+        <li><a href="#themes" onclick="showSection('themes')">🔬 主题研究</a></li>
+        <li><a href="#resources" onclick="showSection('resources')">📊 资源</a></li>
+      </ul>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="content-section active">
+      <div class="hero">
+        <h1>💡 智慧之灯</h1>
+        <p class="subtitle">《Lamp of Wisdom》完整读书笔记</p>
+        <div class="meta">
+          <span>📖 Dustin DiPerna</span>
+          <span>📅 2025 年</span>
+          <span>🏢 Bright Alliance</span>
+          <span>🎯 渐进觉醒之路</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">🎯 关于这个项目</h2>
+        <p>这是一个<strong>全能读书 agent</strong>的 Demo 展示，基于《Lamp of Wisdom: A Modern Guide to the Gradual Path of Enlightenment》一书。</p>
+        
+        <div class="highlight" style="margin-top: 2rem;">
+          <h3 style="margin-top:0; color: var(--primary);">✨ 四种阅读模式</h3>
+          <div class="card-grid">
+            <div class="card" style="border-left-color: var(--success);">
+              <h4 style="margin-top:0; color: var(--success);">⚡ 速读提炼</h4>
+              <p style="color: var(--text-muted);">快速了解全书框架、核心观点、金句摘录。适合第一次接触本书。</p>
+            </div>
+            <div class="card" style="border-left-color: var(--accent);">
+              <h4 style="margin-top:0; color: var(--accent);">📖 深度解读</h4>
+              <p style="color: var(--text-muted);">逐章详细分析，逻辑脉络梳理，跨文本对话。适合精读时参考。</p>
+            </div>
+            <div class="card" style="border-left-color: var(--primary);">
+              <h4 style="margin-top:0; color: var(--primary);">🔬 主题研究</h4>
+              <p style="color: var(--text-muted);">跨章节主题整合，多书对比，实践指南。适合深入研究特定主题。</p>
+            </div>
+            <div class="card" style="border-left-color: var(--danger);">
+              <h4 style="margin-top:0; color: var(--danger);">💬 对话共读</h4>
+              <p style="color: var(--text-muted);">基于书内容的问答系统，随时提问，即时回答。（开发中）</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 2rem;">📊 已生成内容</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>模式</th>
+              <th>状态</th>
+              <th>内容规模</th>
+              <th>链接</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>⚡ 速读提炼</strong></td>
+              <td><span class="tag success">✅ 完成</span></td>
+              <td>覆盖全部 17 章 + 术语表 + 金句</td>
+              <td><a href="#summary" style="color: var(--primary);">查看 →</a></td>
+            </tr>
+            <tr>
+              <td><strong>📖 深度解读</strong></td>
+              <td><span class="tag accent">🚧 进行中</span></td>
+              <td>前 3 章详细解读（共 17 章）</td>
+              <td><a href="#deep-dive" style="color: var(--primary);">查看 →</a></td>
+            </tr>
+            <tr>
+              <td><strong>🔬 主题研究</strong></td>
+              <td><span class="tag success">✅ 完成</span></td>
+              <td>3 大核心主题（15,000 字）</td>
+              <td><a href="#themes" style="color: var(--primary);">查看 →</a></td>
+            </tr>
+            <tr>
+              <td><strong>💬 对话共读</strong></td>
+              <td><span class="tag danger">⏳ 规划中</span></td>
+              <td>问答系统 + 提醒功能</td>
+              <td><span style="color: var(--text-muted);">敬请期待</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top: 2rem;">🔗 关联资源</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+          <a href="https://acnrlza1yd23.feishu.cn/base/AcNpbv4KmaeR6bsKaUqcYba8nAb" target="_blank" class="tag" style="text-decoration: none;">📊 多维表格数据</a>
+          <a href="https://www.feishu.cn/docx/TiLQdvaTRod3zWx3e4CcKRepnOb" target="_blank" class="tag accent" style="text-decoration: none;">📄 速读文档</a>
+          <a href="https://www.feishu.cn/docx/XCTqdCYu5oMO0oxM1JGc8GXNnSe" target="_blank" class="tag accent" style="text-decoration: none;">📖 深度解读文档</a>
+          <a href="https://www.feishu.cn/docx/CxaLdShhCosp5ixWRQtcYNASnOd" target="_blank" class="tag accent" style="text-decoration: none;">🔬 主题研究文档</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">🚀 如何使用这个网站</h2>
+        <ol style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li><strong>第一次接触本书：</strong>从「速读提炼」开始，快速了解框架</li>
+          <li><strong>精读原书时：</strong>对照「深度解读」，深化理解</li>
+          <li><strong>研究特定主题：</strong>查看「主题研究」，获得跨章节整合视角</li>
+          <li><strong>实践中遇到问题：</strong>使用「主题研究」中的实践指南</li>
+          <li><strong>想与人分享：</strong>直接发送这个网站链接</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Summary Section -->
+    <section id="summary" class="content-section">
+      <h2>⚡ 速读提炼</h2>
+      
+      <div class="highlight">
+        <p><strong>核心洞见：</strong>仅靠觉醒并不总能解决深层的情绪创伤。许多修行者过度理智化灵性，用它来逃避未解决的创伤，而不是将其完全整合到成长中。</p>
+      </div>
+
+      <h3>📖 核心框架：精神完整的四个维度</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--primary);">🌅 Wake Up</h4>
+          <p><strong>觉醒</strong></p>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">直接体验最深本性，看穿分离自我的幻象</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag">止观禅修</span>
+            <span class="tag accent">大手印</span>
+            <span class="tag accent">大圆满</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--accent);">🌱 Grow Up</h4>
+          <p><strong>心理成熟</strong></p>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">整合发展阶段，培养情商与健康关系</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag">伦理生活</span>
+            <span class="tag success">四无量心</span>
+            <span class="tag success">菩提心</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--success);">🧹 Clean Up</h4>
+          <p><strong>创伤疗愈</strong></p>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">疗愈未解决的创伤和潜意识制约</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag">阴影工作</span>
+            <span class="tag accent">情绪整合</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4 style="margin-top:0; color: #f43f5e;">🤝 Show Up</h4>
+          <p><strong>服务众生</strong></p>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">在世界中积极参与，以慈悲行动利益众生</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag success">六度</span>
+            <span class="tag">菩萨行</span>
+            <span class="tag">日常实践</span>
+          </div>
+        </div>
+      </div>
+
+      <h3>🗺️ 全书地图：17 章渐进路径</h3>
+      
+      <h4>基础篇（第 1-7 章）—— 建立修行动机</h4>
+      <ul class="chapter-list">
+        <li>
+          <div>
+            <div class="chapter-title">现代世界的智慧之灯</div>
+            <div class="chapter-desc">为什么现代人需要这本指南？传统佛教智慧与现代心理学、神经科学的对话</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">渐进觉醒之路</div>
+            <div class="chapter-desc">顿悟还是渐修？三种修行者类型：瞬时型、跳跃型、渐进型</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">人身的珍贵机会</div>
+            <div class="chapter-desc">认识到人类生命是觉醒的独特机会，以意图性生活</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">无常与死亡的现实</div>
+            <div class="chapter-desc">直面无常，摆脱恐惧与执着，以紧迫感投入修行</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">业力与因果力量</div>
+            <div class="chapter-desc">思想、言语、行动塑造经验，转化负面业力</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">理解苦</div>
+            <div class="chapter-desc">苦的本质与根源：显在痛苦、潜在不满、无常带来的不安</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">寻找真正的庇护</div>
+            <div class="chapter-desc">佛、法、僧作为真正庇护所，而非外在物质或关系</div>
+          </div>
+        </li>
+      </ul>
+
+      <h4>实践篇（第 8-13 章）—— 核心修行方法</h4>
+      <ul class="chapter-list">
+        <li>
+          <div>
+            <div class="chapter-title">伦理生活</div>
+            <div class="chapter-desc">伦理是修行的基础，通过克制和美德培养奠定根基</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">四无量心</div>
+            <div class="chapter-desc">平等心、慈、悲、舍——塑造觉醒的心灵品质</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">菩提心</div>
+            <div class="chapter-desc">为利益一切众生而觉醒的愿望：愿菩提心与行菩提心</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">六度（六波罗蜜）</div>
+            <div class="chapter-desc">布施、持戒、忍辱、精进、禅定、智慧——菩萨道的核心实践</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">专注冥想（Shamatha）</div>
+            <div class="chapter-desc">稳定性训练，专注于呼吸、物体或咒语</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">观照冥想（Vipashyana）</div>
+            <div class="chapter-desc">洞察力培养，观察身心现象的无常、苦、无我</div>
+          </div>
+        </li>
+      </ul>
+
+      <h4>高级篇（第 14-17 章）—— 究竟实相</h4>
+      <ul class="chapter-list">
+        <li>
+          <div>
+            <div class="chapter-title">大手印与大圆满</div>
+            <div class="chapter-desc">直接认知心性的路径，通向觉醒意识的最高实相</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">智慧能量与佛身</div>
+            <div class="chapter-desc">觉醒能量的不同面向：法身、报身、化身的三元结构</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">佛性作为独特表达</div>
+            <div class="chapter-desc">每个人的觉醒都是独特的表达，不模仿他人</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="chapter-title">圆满与慈悲</div>
+            <div class="chapter-desc">修行的圆满体现为慈悲的自然流露，利益众生</div>
+          </div>
+        </li>
+      </ul>
+
+      <h3>💎 金句摘录</h3>
+      <blockquote>
+        <p>仅靠觉醒并不总能解决深层的情绪创伤。许多修行者过度理智化灵性，用它来逃避未解决的创伤，而不是将其完全整合到成长中。</p>
+      </blockquote>
+
+      <blockquote>
+        <p>即使在强调顿悟的传统中，觉悟发生后，这种觉悟也必须随着时间的推移而稳定、整合和体现。</p>
+      </blockquote>
+
+      <blockquote>
+        <p>对于渐进修行者来说，这条路需要耐心、稳定的努力和对过程的信任。虽然旅程可能没有烟花般绚烂，但它为持久的觉悟建立了不可动摇的基础。</p>
+      </blockquote>
+
+      <blockquote>
+        <p>在最真实的表达中，觉悟的传承是一串用爱串联起来的珍珠。</p>
+      </blockquote>
+
+      <blockquote>
+        <p>道路就在这里，等待着。问题是：你准备好深化这段旅程了吗？</p>
+      </blockquote>
+    </section>
+
+    <!-- Deep Dive Section -->
+    <section id="deep-dive" class="content-section">
+      <h2>📖 深度解读</h2>
+      
+      <div class="highlight">
+        <p><strong>当前进度：</strong>前 3 章已完成（第 1-3 章），后续章节持续更新中...</p>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 17%;"></div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">3 / 17 章完成</p>
+      </div>
+
+      <h3>第 1 章：现代世界的智慧之灯</h3>
+      
+      <h4>🎯 核心问题意识</h4>
+      <p><strong>为什么在 2025 年还需要一本佛教修行指南？</strong></p>
+      <p>作者 Dustin DiPerna 开篇就直面这个问题。他的答案不是"因为传统智慧永恒不变"，而是：</p>
+      <blockquote>
+        <p>现代人面临独特的精神困境——我们有前所未有的信息获取能力，却比以往任何时候都更容易迷失在碎片化的灵性消费中。</p>
+      </blockquote>
+
+      <h4>🔍 作者的独特资质</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>导师</th>
+            <th>领域</th>
+            <th>对本书的影响</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Ken Wilber</strong></td>
+            <td>整合理论（Integral Theory）</td>
+            <td>提出"精神完整四维度"框架的理论基础</td>
+          </tr>
+          <tr>
+            <td><strong>Daniel P. Brown</strong></td>
+            <td>哈佛心理学 + 藏传佛教禅修研究</td>
+            <td>将传统实修与现代心理学对话的方法论</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>💡 核心贡献：精神完整的四个维度</h4>
+      <p>这是全书最重要的理论创新，戳中了当代灵性圈的一个痛点：<strong>灵性逃避（Spiritual Bypassing）</strong>。</p>
+      <blockquote>
+        <p>"仅靠觉醒并不总能解决深层的情绪创伤。"</p>
+      </blockquote>
+
+      <h4>🔗 跨文本关联</h4>
+      <p>这个框架与以下著作有深刻对话：</p>
+      <ul style="margin-left: 2rem; color: var(--text-muted);">
+        <li>《整合心理学》- Ken Wilber：直接继承整合理论的"全象限、全层次"框架</li>
+        <li>《不再逃避》- John Welwood：探讨灵性与心理治疗的整合</li>
+        <li>《身体从未忘记》- Bessel van der Kolk：创伤疗愈的神经科学基础</li>
+        <li>《当呼吸化为空气》- Paul Kalanithi：面对死亡时的生命意义追寻</li>
+      </ul>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 3rem 0;">
+
+      <h3>第 2 章：渐进觉醒之路</h3>
+      
+      <h4>🎯 核心张力：顿悟 vs 渐修</h4>
+      <p>这一章处理的是一个古老而永恒的辩论：<strong>觉悟是瞬间发生的，还是需要逐步积累？</strong></p>
+      <blockquote>
+        <p>"即使在强调顿悟的传统中，觉悟发生后，这种觉悟也必须随着时间的推移而稳定、整合和体现。"</p>
+      </blockquote>
+      <p>换句话说：<strong>顿悟可能是瞬间的，但整合一定是渐进的。</strong></p>
+
+      <h4>🔍 三种修行者类型</h4>
+      <div class="card-grid">
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--danger);">瞬时型</h4>
+          <p style="color: var(--text-muted);">罕见，瞬间完全觉醒<br>如：六祖慧能</p>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--accent);">跳跃型</h4>
+          <p style="color: var(--text-muted);">阶段性突破 + 平台期<br>大多数资深修行者</p>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--success);">渐进型</h4>
+          <p style="color: var(--text-muted);">稳步积累 + 持续努力<br>你我这样的人</p>
+        </div>
+      </div>
+
+      <h4>📝 实践建议</h4>
+      <ul style="margin-left: 2rem; color: var(--text-muted);">
+        <li><strong>自我定位练习</strong> —— 诚实评估自己属于哪种类型</li>
+        <li><strong>期望管理</strong> —— 接受自己的节奏，不与他人比较</li>
+        <li><strong>小步积累</strong> —— 每天固定时间禅修，哪怕只有 10 分钟</li>
+        <li><strong>记录进展</strong> —— 每周回顾，看到微小的进步</li>
+      </ul>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 3rem 0;">
+
+      <h3>第 3 章：人身的珍贵机会</h3>
+      
+      <h4>🎯 核心主题：珍惜此生</h4>
+      <p>这一章的主题看似简单——"人身难得"，但作者的诠释角度很现代：</p>
+      <blockquote>
+        <p>不是用"轮回中得人身的概率比乌龟穿过海底针孔还低"这种传统比喻，<br>
+        而是从<strong>存在主义心理学</strong>的角度：<br>
+        <strong>我们是宇宙中少数能够反思自身存在的生命形式。</strong></p>
+      </blockquote>
+
+      <h4>💡 关键区分：意图性生活 vs 自动导航</h4>
+      <div class="card-grid">
+        <div class="card" style="border-left-color: var(--danger);">
+          <h4 style="margin-top:0; color: var(--danger);">⚠️ 自动导航</h4>
+          <ul style="margin-left: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+            <li>被外界刺激驱动</li>
+            <li>重复旧有模式</li>
+            <li>缺乏深度反思</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left-color: var(--success);">
+          <h4 style="margin-top:0; color: var(--success);">✅ 意图性生活</h4>
+          <ul style="margin-left: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+            <li>基于价值观做选择</li>
+            <li>有意识地打破旧模式</li>
+            <li>定期反思调整</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 3rem;">
+        <p><strong>📖 完整深度解读文档：</strong><a href="https://www.feishu.cn/docx/XCTqdCYu5oMO0oxM1JGc8GXNnSe" target="_blank" style="color: var(--primary);">查看飞书文档 →</a></p>
+      </div>
+    </section>
+
+    <!-- Themes Section -->
+    <section id="themes" class="content-section">
+      <h2>🔬 主题研究</h2>
+      
+      <div class="highlight">
+        <p><strong>跨章节整合 · 多书对比 · 实践指南</strong></p>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--primary);">主题一：觉醒的路径</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">涉及章节：第 1、2、12、13、14 章</p>
+          <p>从理论基础到实修方法的完整地图，涵盖 Shamatha、Vipashyana、大手印、大圆满。</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag">止观双运</span>
+            <span class="tag accent">顿渐之辩</span>
+            <span class="tag success">实践指南</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--accent);">主题二：慈悲的修炼</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">涉及章节：第 9、10、11、17 章</p>
+          <p>从四无量心到六度再到圆满，菩萨道的完整实践框架。</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag success">四无量心</span>
+            <span class="tag">菩提心</span>
+            <span class="tag accent">六度</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--success);">主题三：创伤与灵性成长</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">涉及章节：第 1、5、6 章 + 心理学延伸</p>
+          <p>Clean Up 维度的深度探索，整合现代创伤心理学与佛教智慧。</p>
+          <div style="margin-top: 1rem;">
+            <span class="tag danger">灵性逃避</span>
+            <span class="tag accent">创伤疗愈</span>
+            <span class="tag">神经科学</span>
+          </div>
+        </div>
+      </div>
+
+      <h3>💡 核心洞察：三个主题的交织</h3>
+      <blockquote>
+        <p>觉醒、慈悲、创伤疗愈不是孤立的，而是相互交织、相互滋养的。</p>
+      </blockquote>
+      
+      <div class="card" style="border-left-color: var(--accent);">
+        <h4 style="margin-top:0;">交叉洞察</h4>
+        <ul style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li><strong>创伤未疗愈，觉醒易扭曲</strong> —— 未处理的创伤会导致灵性逃避或自我膨胀</li>
+          <li><strong>慈悲是创伤疗愈的良药</strong> —— 自我慈悲和他人慈悲都能促进疗愈</li>
+          <li><strong>觉醒深化慈悲</strong> —— 越洞察无我，越自然生起对众生的慈悲</li>
+          <li><strong>慈悲促进觉醒</strong> —— 放下自我中心的关怀，本身就是觉醒的表达</li>
+          <li><strong>创伤疗愈让慈悲更真实</strong> —— 疗愈自己的痛苦，才能真正同理他人的痛苦</li>
+        </ul>
+      </div>
+
+      <h3>📝 实践指南精选</h3>
+      
+      <h4>觉醒之路：30 天禅修计划</h4>
+      <div class="card">
+        <ul style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li><strong>第一周：</strong>每天 10 分钟 Shamatha，专注呼吸</li>
+          <li><strong>第一个月：</strong>延长到 15-20 分钟，开始记录禅修日志</li>
+          <li><strong>第三个月：</strong>加入 5 分钟 Vipashyana，观察身心现象</li>
+          <li><strong>第六个月：</strong>考虑参加闭关，寻找老师指导</li>
+        </ul>
+      </div>
+
+      <h4>慈悲修炼：30 天计划</h4>
+      <div class="card">
+        <ul style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li><strong>第 1 周：</strong>每天 5 分钟慈心禅修（对自己）</li>
+          <li><strong>第 2 周：</strong>扩展到悲心禅修（对受苦的人）</li>
+          <li><strong>第 3 周：</strong>每天聚焦一个六度实践</li>
+          <li><strong>第 4 周：</strong>整合与发愿，制定下月计划</li>
+        </ul>
+      </div>
+
+      <h4>创伤疗愈：三阶段路径</h4>
+      <div class="card-grid">
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--success);">第一阶段：稳定化</h4>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">1-3 个月<br>身体锚定、安全之地视觉化、建立规律</p>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--accent);">第二阶段：创伤处理</h4>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">3-12 个月<br>专业治疗师支持、创伤敏感禅修</p>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0; color: var(--primary);">第三阶段：整合成长</h4>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">持续进行<br>转化为智慧、服务他人、深化禅修</p>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 3rem;">
+        <p><strong>📖 完整主题研究文档：</strong><a href="https://www.feishu.cn/docx/CxaLdShhCosp5ixWRQtcYNASnOd" target="_blank" style="color: var(--primary);">查看飞书文档 →</a></p>
+      </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="content-section">
+      <h2>📊 资源</h2>
+      
+      <div class="card-grid">
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--primary);">📊 多维表格</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">章节数据库</p>
+          <p>包含 17 章的结构化数据，可筛选、排序、导出。</p>
+          <a href="https://acnrlza1yd23.feishu.cn/base/AcNpbv4KmaeR6bsKaUqcYba8nAb" target="_blank" class="tag" style="text-decoration: none; margin-top: 1rem;">打开多维表格 →</a>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--accent);">📄 飞书文档</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">完整笔记集合</p>
+          <ul style="margin-left: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+            <li><a href="https://www.feishu.cn/docx/TiLQdvaTRod3zWx3e4CcKRepnOb" target="_blank" style="color: var(--primary);">速读提炼文档</a></li>
+            <li><a href="https://www.feishu.cn/docx/XCTqdCYu5oMO0oxM1JGc8GXNnSe" target="_blank" style="color: var(--primary);">深度解读文档</a></li>
+            <li><a href="https://www.feishu.cn/docx/CxaLdShhCosp5ixWRQtcYNASnOd" target="_blank" style="color: var(--primary);">主题研究文档</a></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0; color: var(--success);">💾 下载</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">离线版本</p>
+          <ul style="margin-left: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+            <li>HTML 版本（本页面）</li>
+            <li>Markdown 版本（待上传）</li>
+            <li>PDF 版本（待生成）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>🔗 外部资源</h3>
+      <div class="card">
+        <h4 style="margin-top:0;">延伸阅读</h4>
+        <ul style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li>《整合心理学》- Ken Wilber</li>
+          <li>《身体从未忘记》- Bessel van der Kolk</li>
+          <li>《不再逃避》- John Welwood</li>
+          <li>《当下的力量》- Eckhart Tolle</li>
+          <li>《正念的奇迹》- Thich Nhat Hanh</li>
+          <li>《慈悲的力量》- Thich Nhat Hanh</li>
+        </ul>
+      </div>
+
+      <h3>🛠️ 工具与技术</h3>
+      <div class="card">
+        <p>这个网站是由<strong>全能读书 agent</strong>自动生成的，包含以下能力：</p>
+        <ul style="margin-left: 2rem; color: var(--text-muted); line-height: 2;">
+          <li>✅ PDF 解析与内容提取</li>
+          <li>✅ 速读提炼（框架整理）</li>
+          <li>✅ 深度解读（逐章分析）</li>
+          <li>✅ 主题研究（跨章节整合）</li>
+          <li>✅ 飞书多维表格数据管理</li>
+          <li>✅ 飞书文档自动创建</li>
+          <li>✅ 静态网站生成与部署</li>
+          <li>⏳ 对话共读（问答系统，开发中）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>🦞 整理完成时间：2026 年 4 月 4 日 | 整理者：clawster</p>
+      <p style="margin-top: 0.5rem;">模式：速读提炼 | 深度解读 | 主题研究</p>
+      
+      <div class="links">
+        <a href="https://github.com/echoic24" target="_blank">GitHub</a>
+        <a href="https://acnrlza1yd23.feishu.cn/base/AcNpbv4KmaeR6bsKaUqcYba8nAb" target="_blank">多维表格</a>
+        <a href="#home">返回顶部</a>
+      </div>
+
+      <div class="warning">
+        <strong>⚠️ 重要提醒</strong><br>
+        本书是受限文本，仅限已完成 Rigdzin 入门闭关的学生阅读。<br>
+        本网站仅分享读书笔记和解读（原创内容），不包含原书原文。<br>
+        请勿分享或传播原书 PDF，以保护这些珍贵的教法，让他人能直接受益。
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      // Show selected section
+      document.getElementById(sectionId).classList.add('active');
+      
+      // Update nav links
+      document.querySelectorAll('nav a').forEach(link => {
+        link.classList.remove('active');
+      });
+      document.querySelector(`nav a[href="#${sectionId}"]`).classList.add('active');
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
