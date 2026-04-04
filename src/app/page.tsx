@@ -260,6 +260,11 @@ export default function Home() {
   }
 
   async function uploadFile(file: File) {
+    if (!user) {
+      alert('请先登录')
+      return
+    }
+
     setUploading(true)
     setUploadProgress(0)
 
@@ -268,8 +273,11 @@ export default function Home() {
       const fileName = Date.now() + '-' + Math.random().toString(36).substring(7) + '.' + fileExt
       
       setUploadProgress(20)
-      const arrayBuffer = await file.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
+      
+      // Use FormData for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      
       setUploadProgress(40)
 
       const storageRes = await fetch(SUPABASE_URL + '/storage/v1/object/books/' + fileName, {
@@ -277,17 +285,20 @@ export default function Home() {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'Content-Type': file.type || 'application/octet-stream'
         },
-        body: uint8Array
+        body: file
       })
 
+      setUploadProgress(60)
+
       if (!storageRes.ok) {
-        throw new Error('文件上传失败')
+        const errorText = await storageRes.text()
+        console.error('Storage error:', storageRes.status, errorText)
+        throw new Error('文件上传失败: ' + storageRes.status)
       }
 
-      setUploadProgress(70)
-      const filePath = SUPABASE_URL + '/storage/v1/object/public/books/' + fileName
+      setUploadProgress(80)
+      const filePath = 'books/' + fileName
 
       const bookRes = await fetch(SUPABASE_URL + '/rest/v1/books', {
         method: 'POST',
@@ -308,11 +319,19 @@ export default function Home() {
         })
       })
 
+      if (!bookRes.ok) {
+        throw new Error('保存书籍信息失败')
+      }
+
       const newBook = await bookRes.json()
+      const bookId = newBook[0]?.id
+      
       setUploadProgress(90)
       
       // 创建阅读模式
-      await createReadingModes(newBook[0].id)
+      if (bookId) {
+        await createReadingModes(bookId)
+      }
       
       setUploadProgress(100)
       await fetchBooks()
@@ -323,7 +342,7 @@ export default function Home() {
 
     } catch (error) {
       console.error('Upload error:', error)
-      alert('上传失败，请重试')
+      alert('上传失败: ' + (error as Error).message + '\n请重试')
     } finally {
       setUploading(false)
       setUploadProgress(0)
