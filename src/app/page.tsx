@@ -113,14 +113,20 @@ export default function Home() {
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser)
+          // User already logged in - skip login modal
           setUser(parsedUser)
           setShowLoginModal(false)
         } catch {
+          // Invalid data in localStorage - clear it
           safeLocalStorage.remove('reading_agent_user')
+          setShowLoginModal(true)
         }
+      } else {
+        setShowLoginModal(true)
       }
     } catch (e) {
       console.error('Error checking user:', e)
+      setShowLoginModal(true)
     } finally {
       setLoading(false)
     }
@@ -130,6 +136,24 @@ export default function Home() {
     if (!loginName.trim()) {
       alert('请输入名字')
       return
+    }
+
+    const existingUser = safeLocalStorage.get('reading_agent_user')
+    if (existingUser) {
+      try {
+        const parsed = JSON.parse(existingUser)
+        // Update name if changed
+        if (parsed.name !== loginName.trim()) {
+          parsed.name = loginName.trim()
+          parsed.email = loginEmail.trim() || parsed.email
+          safeLocalStorage.set('reading_agent_user', JSON.stringify(parsed))
+          setUser(parsed)
+        } else {
+          setUser(parsed)
+        }
+        setShowLoginModal(false)
+        return
+      } catch {}
     }
 
     const newUser: User = {
