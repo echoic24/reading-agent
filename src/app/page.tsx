@@ -5,6 +5,24 @@ import { useState, useEffect, useRef } from 'react'
 const SUPABASE_URL = 'https://nfjzfyxmtuquptbwqlxa.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hanpmeXhtdHVxdXB0YndxbHhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyOTAyOTEsImV4cCI6MjA5MDg2NjI5MX0.aB6jVdoTnMBYYl980dI4yyDYB3hC9FP98_WLvhTXfPg'
 
+// Safe localStorage access
+const safeLocalStorage = {
+  get: (key: string) => {
+    if (typeof window === 'undefined') return null
+    try {
+      return localStorage.getItem(key)
+    } catch { return null }
+  },
+  set: (key: string, value: string) => {
+    if (typeof window === 'undefined') return
+    try { localStorage.setItem(key, value) } catch {}
+  },
+  remove: (key: string) => {
+    if (typeof window === 'undefined') return
+    try { localStorage.removeItem(key) } catch {}
+  }
+}
+
 interface User {
   id: string
   name: string
@@ -53,7 +71,7 @@ function generateUserId(): string {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
-  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(true)
   const [loginName, setLoginName] = useState('')
   const [loginEmail, setLoginEmail] = useState('')
   const [books, setBooks] = useState<Book[]>([])
@@ -69,6 +87,7 @@ export default function Home() {
   const [feishuUrl, setFeishuUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -89,18 +108,22 @@ export default function Home() {
   }, [selectedBook])
 
   function checkUser() {
-    const savedUser = localStorage.getItem('reading_agent_user')
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser)
-        setUser(parsedUser)
-      } catch {
-        localStorage.removeItem('reading_agent_user')
+    try {
+      const savedUser = safeLocalStorage.get('reading_agent_user')
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser)
+          setUser(parsedUser)
+          setShowLoginModal(false)
+        } catch {
+          safeLocalStorage.remove('reading_agent_user')
+        }
       }
-    } else {
-      setShowLoginModal(true)
+    } catch (e) {
+      console.error('Error checking user:', e)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleLogin() {
@@ -128,19 +151,18 @@ export default function Home() {
         body: JSON.stringify(newUser)
       })
 
+      let savedUser = newUser
       if (res.ok) {
         const result = await res.json()
-        const savedUser = result[0] || newUser
-        localStorage.setItem('reading_agent_user', JSON.stringify(savedUser))
-        setUser(savedUser)
-        setShowLoginModal(false)
-      } else {
-        localStorage.setItem('reading_agent_user', JSON.stringify(newUser))
-        setUser(newUser)
-        setShowLoginModal(false)
+        savedUser = result[0] || newUser
       }
-    } catch {
-      localStorage.setItem('reading_agent_user', JSON.stringify(newUser))
+
+      safeLocalStorage.set('reading_agent_user', JSON.stringify(savedUser))
+      setUser(savedUser)
+      setShowLoginModal(false)
+    } catch (e) {
+      console.error('Login error:', e)
+      safeLocalStorage.set('reading_agent_user', JSON.stringify(newUser))
       setUser(newUser)
       setShowLoginModal(false)
     }
@@ -148,7 +170,7 @@ export default function Home() {
 
   function handleLogout() {
     if (confirm('确定要退出登录吗？')) {
-      localStorage.removeItem('reading_agent_user')
+      safeLocalStorage.remove('reading_agent_user')
       setUser(null)
       setShowLoginModal(true)
       setBooks([])
