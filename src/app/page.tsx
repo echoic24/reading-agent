@@ -61,10 +61,10 @@ export default function Home() {
 
   async function fetchBooks() {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?select=*&order=created_at.desc`, {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/books?select=*&order=created_at.desc', {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
         }
       })
       const data = await res.json()
@@ -81,10 +81,10 @@ export default function Home() {
 
   async function fetchModes(bookId: string) {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/reading_modes?book_id=eq.${bookId}&select=*`, {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/reading_modes?book_id=eq.' + bookId + '&select=*', {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
         }
       })
       const data = await res.json()
@@ -99,23 +99,21 @@ export default function Home() {
     setUploadProgress(0)
 
     try {
-      // 1. 上传到 Supabase Storage
       const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const fileName = Date.now() + '-' + Math.random().toString(36).substring(7) + '.' + fileExt
       
       setUploadProgress(20)
       
-      // 读取文件为 ArrayBuffer
       const arrayBuffer = await file.arrayBuffer()
       const uint8Array = new Uint8Array(arrayBuffer)
       
       setUploadProgress(40)
 
-      const storageRes = await fetch(`${SUPABASE_URL}/storage/v1/object/books/${fileName}`, {
+      const storageRes = await fetch(SUPABASE_URL + '/storage/v1/object/books/' + fileName, {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY`,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': file.type || 'application/octet-stream'
         },
         body: uint8Array
@@ -127,14 +125,13 @@ export default function Home() {
 
       setUploadProgress(70)
 
-      const filePath = `${SUPABASE_URL}/storage/v1/object/public/books/${fileName}`
+      const filePath = SUPABASE_URL + '/storage/v1/object/public/books/' + fileName
 
-      // 2. 创建书籍记录
-      const bookRes = await fetch(`${SUPABASE_URL}/rest/v1/books`, {
+      const bookRes = await fetch(SUPABASE_URL + '/rest/v1/books', {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
@@ -151,12 +148,10 @@ export default function Home() {
       const newBook = await bookRes.json()
       setUploadProgress(90)
 
-      // 3. 创建阅读模式
       await createReadingModes(newBook[0].id)
 
       setUploadProgress(100)
 
-      // 4. 刷新书籍列表
       await fetchBooks()
       setShowUploadModal(false)
       resetForm()
@@ -181,11 +176,11 @@ export default function Home() {
     ]
 
     for (const mode of modes) {
-      await fetch(`${SUPABASE_URL}/rest/v1/reading_modes`, {
+      await fetch(SUPABASE_URL + '/rest/v1/reading_modes', {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ ...mode, book_id: bookId })
@@ -202,11 +197,11 @@ export default function Home() {
     setUploading(true)
 
     try {
-      const bookRes = await fetch(`${SUPABASE_URL}/rest/v1/books`, {
+      const bookRes = await fetch(SUPABASE_URL + '/rest/v1/books', {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
@@ -244,11 +239,11 @@ export default function Home() {
     setUploading(true)
 
     try {
-      const bookRes = await fetch(`${SUPABASE_URL}/rest/v1/books`, {
+      const bookRes = await fetch(SUPABASE_URL + '/rest/v1/books', {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
@@ -355,11 +350,11 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setUploadSource(tab.id as any)}
-                  className={`flex-1 py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                  className={'flex-1 py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ' + (
                     uploadSource === tab.id 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
+                  )}
                 >
                   <span>{tab.icon}</span>
                   <span className="text-sm">{tab.label}</span>
@@ -399,11 +394,11 @@ export default function Home() {
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+                className={'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ' + (
                   dragOver 
                     ? 'border-purple-400 bg-purple-500/20' 
                     : 'border-slate-600 hover:border-purple-400'
-                }`}
+                )}
               >
                 <input
                   ref={fileInputRef}
@@ -423,7 +418,7 @@ export default function Home() {
                     <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-purple-500 transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
+                        style={{ width: uploadProgress + '%' }}
                       />
                     </div>
                     <p className="text-purple-400 text-sm mt-2">{uploadProgress}%</p>
@@ -495,11 +490,11 @@ export default function Home() {
             {books.map(book => (
               <div 
                 key={book.id}
-                className={`bg-white/5 rounded-xl overflow-hidden border transition cursor-pointer ${
+                className={'bg-white/5 rounded-xl overflow-hidden border transition cursor-pointer ' + (
                   selectedBook?.id === book.id 
                     ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
                     : 'border-white/10 hover:border-purple-400'
-                }`}
+                )}
                 onClick={() => setSelectedBook(book)}
               >
                 <div className="bg-gradient-to-br from-purple-600 to-blue-600 h-40 flex items-center justify-center">
@@ -509,13 +504,13 @@ export default function Home() {
                   <h3 className="text-xl font-bold text-white">{book.title}</h3>
                   <p className="text-purple-300 mt-1">{book.author}</p>
                   <div className="flex items-center gap-2 mt-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <span className={'px-2 py-1 rounded text-xs font-medium ' + (
                       book.status === 'completed' 
                         ? 'bg-green-500/20 text-green-400' 
                         : book.status === 'processing' 
                           ? 'bg-yellow-500/20 text-yellow-400'
                           : 'bg-slate-500/20 text-slate-400'
-                    }`}>
+                    )}>
                       {book.status === 'completed' ? '✓ 已完成' : book.status === 'processing' ? '⏳ 处理中' : '📥 待处理'}
                     </span>
                     <span className="text-xs text-slate-400">
@@ -548,7 +543,7 @@ export default function Home() {
                   className="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-purple-400 transition group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`${config.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}>
+                    <div className={config.color + ' w-12 h-12 rounded-lg flex items-center justify-center text-2xl'}>
                       {config.icon}
                     </div>
                     <div className="flex-1">
@@ -557,13 +552,13 @@ export default function Home() {
                       </h3>
                       <p className="text-purple-300 mt-1">{mode.description}</p>
                       <div className="flex items-center gap-2 mt-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        <span className={'px-2 py-1 rounded text-xs font-medium ' + (
                           mode.status === 'completed' 
                             ? 'bg-green-500/20 text-green-400' 
                             : mode.status === 'ready'
                               ? 'bg-blue-500/20 text-blue-400'
                               : 'bg-yellow-500/20 text-yellow-400'
-                        }`}>
+                        )}>
                           {mode.status === 'completed' ? '✓ 已完成' 
                            : mode.status === 'ready' ? '🚀 就绪'
                            : '⏳ 处理中'}
