@@ -285,6 +285,7 @@ export default function Home() {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
         },
         body: file
       })
