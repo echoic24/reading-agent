@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createBook, createJob, updateBook, updateJob } from '@/lib/supabase'
-import { createDocument, createBitable } from '@/lib/feishu'
+import { createBook, createJob, updateBook, Job } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Create jobs for each mode
     const jobs = await Promise.all(
       modes.map(async (mode: string) => {
-        return await createJob(userId, book.id, mode)
+        return await createJob(userId, book.id, mode as Job['mode'])
       })
     )
     
