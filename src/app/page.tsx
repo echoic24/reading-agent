@@ -179,12 +179,11 @@ export default function Home() {
   }
 
   async function fetchBooks() {
+    if (!user) return
+    
     try {
-      let url = SUPABASE_URL + '/rest/v1/books?select=*&order=created_at.desc'
-      
-      if (user) {
-        url += '&user_id=eq.' + user.id
-      }
+      setLoading(true)
+      let url = SUPABASE_URL + '/rest/v1/books?select=*&order=created_at.desc&user_id=eq.' + user.id
 
       const res = await fetch(url, {
         headers: {
@@ -192,13 +191,22 @@ export default function Home() {
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
         }
       })
+      
+      if (!res.ok) {
+        console.error('Fetch books failed:', res.status)
+        setBooks([])
+        return
+      }
+      
       const data = await res.json()
-      setBooks(data)
-      if (data.length > 0 && !selectedBook) {
+      setBooks(Array.isArray(data) ? data : [])
+      
+      if (Array.isArray(data) && data.length > 0 && !selectedBook) {
         setSelectedBook(data[0])
       }
     } catch (error) {
       console.error('Error fetching books:', error)
+      setBooks([])
     } finally {
       setLoading(false)
     }
@@ -212,10 +220,18 @@ export default function Home() {
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
         }
       })
+      
+      if (!res.ok) {
+        console.error('Fetch modes failed:', res.status)
+        setModes([])
+        return
+      }
+      
       const data = await res.json()
-      setModes(data)
+      setModes(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching modes:', error)
+      setModes([])
     }
   }
 
