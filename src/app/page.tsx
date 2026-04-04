@@ -456,10 +456,9 @@ export default function Home() {
               </button>
               <button 
                 onClick={handleLogout}
-                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition"
-                title="退出登录"
+                className="px-3 py-2 bg-red-600/80 text-white text-sm rounded-lg hover:bg-red-600 transition"
               >
-                🚪
+                退出
               </button>
             </div>
           </div>
