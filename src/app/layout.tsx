@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '📚 全能读书Agent - AI帮你深度阅读',
-  description: '上传书籍，AI自动生成速读提炼、深度解读、主题研究、对话共读',
+  title: '📚 妙读 - AI智能阅读助手',
+  description: 'AI驱动的智能阅读助手，让阅读更高效',
 }
 
 export default function RootLayout({
