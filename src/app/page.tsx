@@ -45,22 +45,15 @@ interface ReadingMode {
 }
 
 const modeConfigs = {
-  speed_read: { icon: '⚡', color: 'amber', label: '速读提炼', desc: '快速提炼核心要点' },
-  deep_analysis: { icon: '📖', color: 'blue', label: '深度解读', desc: '深入分析章节精华' },
-  topic_research: { icon: '🔍', color: 'purple', label: '主题研究', desc: '横向对比关联分析' },
-  dialogue: { icon: '💬', color: 'green', label: '对话共读', desc: '问答互动深度理解' },
-}
-
-const colorClasses: Record<string, { bg: string, text: string, border: string, light: string }> = {
-  amber: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', light: 'bg-amber-500' },
-  blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', light: 'bg-blue-500' },
-  purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', light: 'bg-purple-500' },
-  green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', light: 'bg-green-500' },
+  speed_read: { icon: '⚡', color: '#f59e0b', label: '速读提炼', desc: '30秒了解核心' },
+  deep_analysis: { icon: '📖', color: '#3b82f6', label: '深度解读', desc: '逐章精华分析' },
+  topic_research: { icon: '🔍', color: '#8b5cf6', label: '主题研究', desc: '知识体系构建' },
+  dialogue: { icon: '💬', color: '#10b981', label: '对话共读', desc: '问答深度理解' },
 }
 
 function getBookCoverUrl(bookId: string, title: string): string {
   const seed = title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 30)
-  return `https://picsum.photos/seed/${seed}/400/300`
+  return `https://picsum.photos/seed/${seed}/400/600`
 }
 
 function getCoverEmoji(title: string): string {
@@ -83,11 +76,11 @@ function getCoverEmoji(title: string): string {
   return '📚'
 }
 
-function getStatusInfo(status: string) {
+function getStatusBadge(status: string) {
   switch (status) {
-    case 'completed': return { label: '已完成', icon: '✓', bg: 'bg-emerald-500', text: 'text-emerald-400' }
-    case 'processing': return { label: '处理中', icon: '⏳', bg: 'bg-amber-500', text: 'text-amber-400' }
-    default: return { label: '待处理', icon: '○', bg: 'bg-slate-500', text: 'text-slate-400' }
+    case 'completed': return { label: '已完成', bg: '#10b981', text: 'white' }
+    case 'processing': return { label: '处理中', bg: '#f59e0b', text: 'white' }
+    default: return { label: '待处理', bg: '#6b7280', text: 'white' }
   }
 }
 
@@ -100,17 +93,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [dragOver, setDragOver] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [editingBook, setEditingBook] = useState<Book | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editAuthor, setEditAuthor] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const fetchBooksRef = useRef<() => Promise<void>>()
-  const fetchModesRef = useRef<(bookId: string) => Promise<void>>()
 
-  // 获取书籍列表
   const fetchBooks = useCallback(async () => {
     try {
       const db = getDb()
@@ -118,14 +107,10 @@ export default function Home() {
       const booksData = result as Book[]
       setAllBooks(booksData)
       setBooks(booksData)
-      console.log('Fetched books:', booksData.length)
-      if (booksData.length > 0) {
-        setSelectedBook(booksData[0])
-      }
+      if (booksData.length > 0) setSelectedBook(booksData[0])
     } catch (e) { console.error('Fetch books error:', e) }
   }, [])
 
-  // 获取阅读模式
   const fetchModes = useCallback(async (bookId: string) => {
     try {
       const db = getDb()
@@ -134,7 +119,6 @@ export default function Home() {
     } catch (e) { console.error(e) }
   }, [])
 
-  // Check user session
   useEffect(() => {
     const savedUser = safeLocalStorage.get('reading_agent_user')
     if (savedUser) {
@@ -159,7 +143,6 @@ export default function Home() {
     setLoading(false)
   }, [fetchBooks])
 
-  // Search filtering
   useEffect(() => {
     if (!searchQuery.trim()) {
       setBooks(allBooks)
@@ -172,16 +155,8 @@ export default function Home() {
     }
   }, [searchQuery, allBooks])
 
-  useEffect(() => { fetchBooksRef.current = fetchBooks }, [fetchBooks])
-  useEffect(() => { fetchModesRef.current = fetchModes }, [fetchModes])
-
-  useEffect(() => {
-    fetchBooks()
-  }, [fetchBooks])
-
-  useEffect(() => {
-    if (selectedBook) fetchModesRef.current?.(selectedBook.id)
-  }, [selectedBook])
+  useEffect(() => { if (user) fetchBooks() }, [user, fetchBooks])
+  useEffect(() => { if (selectedBook) fetchModes(selectedBook.id) }, [selectedBook])
 
   function handleLogin() {
     const name = prompt('请输入你的名字:')
@@ -213,8 +188,6 @@ export default function Home() {
 
     try {
       setUploading(true)
-      setUploadProgress(10)
-      
       const title = file.name.replace('.pdf', '')
       const db = getDb()
       
@@ -223,8 +196,7 @@ export default function Home() {
         VALUES (${title}, '未知作者', 'pdf', ${file.name}, 'pending', ${user.id})
       `
       
-      setUploadProgress(100)
-      await fetchBooksRef.current?.()
+      await fetchBooks()
       setShowUploadModal(false)
       alert('上传成功！点击"开始处理"来生成阅读笔记。')
 
@@ -232,7 +204,6 @@ export default function Home() {
       alert('上传失败: ' + e.message)
     } finally {
       setUploading(false)
-      setUploadProgress(0)
     }
   }
 
@@ -243,7 +214,7 @@ export default function Home() {
     try {
       const db = getDb()
       await db`UPDATE books SET status = 'processing' WHERE id = ${selectedBook.id}`
-      await fetchBooksRef.current?.()
+      await fetchBooks()
       alert('已提交处理！请在飞书告诉我"处理书籍"，我会自动生成阅读笔记。')
     } catch (e) {
       alert('提交失败')
@@ -290,9 +261,7 @@ export default function Home() {
       const updatedBook = { ...editingBook, title: editTitle.trim(), author: editAuthor.trim() || '未知作者' }
       setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b))
       setAllBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b))
-      if (selectedBook?.id === updatedBook.id) {
-        setSelectedBook(updatedBook)
-      }
+      if (selectedBook?.id === updatedBook.id) setSelectedBook(updatedBook)
 
       setEditingBook(null)
       alert('保存成功')
@@ -303,11 +272,12 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">加载中...</p>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '4px solid rgba(16, 185, 129, 0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: '#94a3b8', fontSize: 14 }}>加载中...</p>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -316,152 +286,174 @@ export default function Home() {
   const processingCount = books.filter(b => b.status === 'processing').length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
+        button { transition: all 0.2s ease; }
+        input:focus { outline: none; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .mode-card:hover { transform: translateY(-4px); }
+      `}</style>
+
       {/* Header */}
-      <header className="border-b border-slate-800/50 backdrop-blur-xl bg-slate-900/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <span className="text-2xl">📚</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">妙读</h1>
-                <p className="text-xs text-slate-500">AI 智能阅读助手</p>
-              </div>
+      <header style={{ background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 16, background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}>
+              📚
             </div>
-            <div className="flex items-center gap-3">
-              {user ? (
-                <>
-                  <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-sm font-medium">
-                      {user.name[0].toUpperCase()}
-                    </div>
-                    <span className="text-sm text-slate-300">{user.name}</span>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: 'white', letterSpacing: '-0.5px' }}>妙读</h1>
+              <p style={{ fontSize: 12, color: '#64748b' }}>AI 智能阅读助手</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {user ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'white' }}>
+                    {user.name[0].toUpperCase()}
                   </div>
-                  <button onClick={() => setShowUploadModal(true)} className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-full font-medium transition-all shadow-lg shadow-emerald-500/20">
-                    + 上传书籍
-                  </button>
-                  <button onClick={handleLogout} className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition">
-                    退出
-                  </button>
-                </>
-              ) : (
-                <button onClick={handleLogin} className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-full font-medium transition-all shadow-lg shadow-emerald-500/20">
-                  开始使用
+                  <span style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 500 }}>{user.name}</span>
+                </div>
+                <button 
+                  onClick={() => setShowUploadModal(true)}
+                  style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 100, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}
+                >
+                  + 上传书籍
                 </button>
-              )}
-            </div>
+                <button 
+                  onClick={handleLogout}
+                  style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 100, color: '#94a3b8', fontSize: 14, cursor: 'pointer' }}
+                >
+                  退出
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 100, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+              >
+                开始使用
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       {user ? (
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 32px' }}>
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 40 }}>
             {[
-              { label: '我的书籍', value: books.length, icon: '📚', color: 'from-blue-500 to-purple-500' },
-              { label: '已完成', value: completedCount, icon: '✅', color: 'from-emerald-500 to-teal-500' },
-              { label: '处理中', value: processingCount, icon: '⏳', color: 'from-amber-500 to-orange-500' },
+              { label: '我的书籍', value: books.length, icon: '📚', color: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
+              { label: '已完成', value: completedCount, icon: '✅', color: 'linear-gradient(135deg, #10b981, #14b8a6)' },
+              { label: '处理中', value: processingCount, icon: '⏳', color: 'linear-gradient(135deg, #f59e0b, #f97316)' },
             ].map((stat, i) => (
-              <div key={i} className="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700/50 p-5 group hover:border-slate-600/50 transition-all">
-                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-5 group-hover:opacity-10 transition-opacity`} />
-                <div className="relative flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                    <span className="text-xl">{stat.icon}</span>
+              <div key={i} className="card-hover" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: 28, animation: 'fadeIn 0.5s ease forwards', animationDelay: `${i * 0.1}s`, opacity: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
+                    {stat.icon}
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-sm text-slate-500">{stat.label}</div>
+                    <div style={{ fontSize: 36, fontWeight: 700, color: 'white' }}>{stat.value}</div>
+                    <div style={{ fontSize: 14, color: '#64748b' }}>{stat.label}</div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Books Grid */}
-          <div className="grid lg:grid-cols-3 gap-8">
+          {/* Content Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 32 }}>
             {/* Book List */}
-            <div className="lg:col-span-1">
+            <div>
               {/* Search */}
-              <div className="relative mb-4">
+              <div style={{ position: 'relative', marginBottom: 20 }}>
                 <input
                   type="text"
                   placeholder="搜索书籍..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-11 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition"
+                  style={{ width: '100%', padding: '14px 16px 14px 44px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, color: 'white', fontSize: 14 }}
                 />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
+                <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>🔍</span>
               </div>
 
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-200">我的书籍</h2>
-                {books.length > 0 && <span className="text-sm text-slate-500">{books.length} 本</span>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0' }}>我的书籍</h2>
+                {books.length > 0 && <span style={{ fontSize: 13, color: '#64748b' }}>{books.length} 本</span>}
               </div>
 
               {books.length === 0 ? (
-                <div className="text-center py-12 rounded-2xl bg-slate-800/30 border border-slate-700/30">
-                  <div className="text-5xl mb-4 opacity-50">📭</div>
-                  <p className="text-slate-400 mb-4">{searchQuery ? '没有找到匹配的书籍' : '还没有书籍'}</p>
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>📭</div>
+                  <p style={{ color: '#64748b', marginBottom: 20 }}>{searchQuery ? '没有找到匹配的书籍' : '还没有书籍'}</p>
                   {!searchQuery && (
-                    <button onClick={() => setShowUploadModal(true)} className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all">
+                    <button 
+                      onClick={() => setShowUploadModal(true)}
+                      style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 100, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                    >
                       上传第一本
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {books.map(book => {
-                    const statusInfo = getStatusInfo(book.status)
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {books.map((book, idx) => {
+                    const badge = getStatusBadge(book.status)
+                    const isSelected = selectedBook?.id === book.id
                     return (
                       <div
                         key={book.id}
                         onClick={() => setSelectedBook(book)}
-                        className={`group relative overflow-hidden rounded-xl border cursor-pointer transition-all ${
-                          selectedBook?.id === book.id
-                            ? 'border-emerald-500/50 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
-                            : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600/50 hover:bg-slate-800/50'
-                        }`}
+                        className="card-hover"
+                        style={{ 
+                          display: 'flex', 
+                          gap: 16, 
+                          padding: 16, 
+                          background: isSelected ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.03)', 
+                          border: isSelected ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.06)', 
+                          borderRadius: 16, 
+                          cursor: 'pointer',
+                          animation: 'fadeIn 0.4s ease forwards',
+                          animationDelay: `${idx * 0.05}s`,
+                          opacity: 0
+                        }}
                       >
-                        <div className="flex gap-3 p-3">
-                          {/* Cover */}
-                          <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 relative">
-                            <img 
-                              src={getBookCoverUrl(book.id, book.title)} 
-                              alt={book.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                            <span className="absolute bottom-1 left-1 text-sm">{getCoverEmoji(book.title)}</span>
-                          </div>
-                          
-                          {/* Info */}
-                          <div className="flex-1 min-w-0 py-0.5">
-                            <h3 className="font-medium text-sm text-slate-200 truncate">{book.title}</h3>
-                            <p className="text-xs text-slate-500 truncate mt-0.5">{book.author}</p>
-                            <div className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-xs ${statusInfo.bg}/20 ${statusInfo.text}`}>
-                              <span>{statusInfo.icon}</span>
-                              <span>{statusInfo.label}</span>
-                            </div>
-                          </div>
+                        {/* Cover */}
+                        <div style={{ width: 64, height: 80, borderRadius: 12, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                          <img src={getBookCoverUrl(book.id, book.title)} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }} />
+                          <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 16 }}>{getCoverEmoji(book.title)}</span>
+                        </div>
+                        
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
+                          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.title}</h3>
+                          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.author}</p>
+                          <span style={{ display: 'inline-block', padding: '4px 10px', background: badge.bg, borderRadius: 100, fontSize: 12, fontWeight: 500, color: badge.text }}>
+                            {badge.label}
+                          </span>
                         </div>
 
                         {/* Actions */}
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6, opacity: 0 }}>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleEditBook(book); }}
-                            className="w-7 h-7 rounded-lg bg-slate-900/80 hover:bg-slate-800 flex items-center justify-center text-xs transition"
-                            title="编辑"
+                            style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer', fontSize: 12 }}
                           >
                             ✏️
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteBook(book); }}
-                            className="w-7 h-7 rounded-lg bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-xs transition"
-                            title="删除"
+                            style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(239, 68, 68, 0.2)', border: 'none', cursor: 'pointer', fontSize: 12 }}
                           >
                             🗑️
                           </button>
@@ -474,47 +466,43 @@ export default function Home() {
             </div>
 
             {/* Reading Modes */}
-            <div className="lg:col-span-2">
+            <div>
               {selectedBook ? (
                 <>
-                  {/* Selected Book Hero */}
-                  <div className="relative h-56 rounded-2xl overflow-hidden mb-6">
-                    <img 
-                      src={getBookCoverUrl(selectedBook.id, selectedBook.title)} 
-                      alt={selectedBook.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
-                    <div className="absolute inset-0 flex items-end p-6">
-                      <div className="flex items-end gap-4">
-                        <div className="w-16 h-16 rounded-xl bg-slate-800/80 backdrop-blur flex items-center justify-center text-4xl shadow-lg">
+                  {/* Book Hero */}
+                  <div style={{ position: 'relative', height: 220, borderRadius: 24, overflow: 'hidden', marginBottom: 28 }}>
+                    <img src={getBookCoverUrl(selectedBook.id, selectedBook.title)} alt={selectedBook.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 50%, transparent 100%)' }} />
+                    <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
+                        <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
                           {getCoverEmoji(selectedBook.title)}
                         </div>
-                        <div className="flex-1 pb-1">
-                          <h2 className="text-2xl font-bold text-white mb-1">{selectedBook.title}</h2>
-                          <p className="text-slate-400 text-sm">{selectedBook.author || '未知作者'}</p>
+                        <div>
+                          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'white', marginBottom: 4 }}>{selectedBook.title}</h2>
+                          <p style={{ fontSize: 14, color: '#94a3b8' }}>{selectedBook.author || '未知作者'}</p>
                         </div>
-                        {(() => {
-                          const s = getStatusInfo(selectedBook.status)
-                          return (
-                            <div className={`px-4 py-1.5 rounded-full ${s.bg}/20 border ${s.bg}/30 text-sm ${s.text} mb-1`}>
-                              {s.icon} {s.label}
-                            </div>
-                          )
-                        })()}
                       </div>
+                      {(() => {
+                        const badge = getStatusBadge(selectedBook.status)
+                        return (
+                          <span style={{ padding: '8px 16px', background: badge.bg, borderRadius: 100, fontSize: 13, fontWeight: 600, color: badge.text }}>
+                            {badge.label}
+                          </span>
+                        )
+                      })()}
                     </div>
                   </div>
 
                   {/* Action Button */}
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>📖</span> 阅读模式
                     </h3>
                     {selectedBook.status !== 'completed' && (
                       <button
                         onClick={handleProcessBook}
-                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-full font-medium transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                        style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 100, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}
                       >
                         <span>🚀</span> 开始处理
                       </button>
@@ -522,10 +510,9 @@ export default function Home() {
                   </div>
 
                   {/* Mode Cards */}
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                     {Object.entries(modeConfigs).map(([key, config]) => {
                       const mode = modes.find(m => m.mode_type === key)
-                      const colors = colorClasses[config.color]
                       
                       return (
                         <a
@@ -533,41 +520,47 @@ export default function Home() {
                           href={mode?.feishu_doc_url || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`group relative overflow-hidden rounded-xl border ${colors.border} ${mode?.feishu_doc_url ? 'bg-slate-800/50 hover:bg-slate-800 cursor-pointer' : 'bg-slate-800/30 cursor-default opacity-70'} p-5 transition-all hover:shadow-lg hover:-translate-y-0.5`}
+                          className="mode-card"
+                          style={{ 
+                            display: 'block',
+                            padding: 24, 
+                            background: mode?.feishu_doc_url ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)', 
+                            border: `1px solid ${mode?.feishu_doc_url ? config.color + '30' : 'rgba(255,255,255,0.08)'}`, 
+                            borderRadius: 20, 
+                            textDecoration: 'none',
+                            transition: 'all 0.3s ease'
+                          }}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-10`} />
-                          <div className="relative">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center text-xl`}>
-                                {config.icon}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-slate-200">{config.label}</h4>
-                                <p className="text-xs text-slate-500">{config.desc}</p>
-                              </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+                            <div style={{ width: 48, height: 48, borderRadius: 14, background: config.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                              {config.icon}
                             </div>
-                            
-                            {mode?.feishu_doc_url ? (
-                              <div className={`flex items-center gap-2 text-sm ${colors.text}`}>
-                                <span>打开文档</span>
-                                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                              </div>
-                            ) : (
-                              <div className="text-sm text-slate-500">
-                                {selectedBook.status === 'completed' ? '等待生成...' : '未处理'}
-                              </div>
-                            )}
+                            <div>
+                              <h4 style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9', marginBottom: 2 }}>{config.label}</h4>
+                              <p style={{ fontSize: 12, color: '#64748b' }}>{config.desc}</p>
+                            </div>
                           </div>
+                          
+                          {mode?.feishu_doc_url ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: config.color, fontWeight: 500 }}>
+                              <span>打开文档</span>
+                              <span style={{ transition: 'transform 0.2s' }}>→</span>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 13, color: '#475569' }}>
+                              {selectedBook.status === 'completed' ? '等待生成...' : '未处理'}
+                            </div>
+                          )}
                         </a>
                       )
                     })}
                   </div>
                 </>
               ) : (
-                <div className="h-full flex items-center justify-center rounded-2xl bg-slate-800/30 border border-slate-700/30 border-dashed">
-                  <div className="text-center">
-                    <div className="text-5xl mb-4 opacity-30">📖</div>
-                    <p className="text-slate-500">从左侧选择一本书开始阅读</p>
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '2px dashed rgba(255,255,255,0.1)', minHeight: 400 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 64, marginBottom: 16, opacity: 0.3 }}>📖</div>
+                    <p style={{ color: '#475569', fontSize: 15 }}>从左侧选择一本书开始阅读</p>
                   </div>
                 </div>
               )}
@@ -576,39 +569,42 @@ export default function Home() {
         </main>
       ) : (
         /* Landing Page */
-        <main className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <div className="mb-8">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-2xl shadow-emerald-500/30">
-              <span className="text-5xl">📚</span>
+        <main style={{ maxWidth: 900, margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
+          <div style={{ marginBottom: 60 }}>
+            <div style={{ width: 100, height: 100, margin: '0 auto 32px', borderRadius: 28, background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, boxShadow: '0 8px 40px rgba(16, 185, 129, 0.4)' }}>
+              📚
             </div>
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <h1 style={{ fontSize: 56, fontWeight: 800, color: 'white', marginBottom: 16, letterSpacing: '-2px', background: 'linear-gradient(135deg, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               妙读
             </h1>
-            <p className="text-xl text-slate-400 mb-8 max-w-md mx-auto">
+            <p style={{ fontSize: 22, color: '#64748b', maxWidth: 500, margin: '0 auto' }}>
               AI 驱动的智能阅读助手，让阅读更高效
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 mb-12">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 60 }}>
             {[
               { icon: '⚡', title: '快速提炼', desc: '30秒了解一本书的核心要点' },
               { icon: '📖', title: '深度解读', desc: '逐章分析，洞见章节精华' },
               { icon: '🔍', title: '主题研究', desc: '横向对比，构建知识体系' },
               { icon: '💬', title: '对话共读', desc: '问答互动，加深理解记忆' },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-4 p-5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-left">
-                <div className="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center text-2xl">
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: 28, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, textAlign: 'left', animation: 'fadeIn 0.5s ease forwards', animationDelay: `${i * 0.1}s`, opacity: 0 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
                   {item.icon}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-200">{item.title}</h3>
-                  <p className="text-sm text-slate-500">{item.desc}</p>
+                  <h3 style={{ fontSize: 17, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>{item.title}</h3>
+                  <p style={{ fontSize: 14, color: '#64748b' }}>{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <button onClick={handleLogin} className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-full font-semibold text-lg transition-all shadow-xl shadow-emerald-500/30">
+          <button 
+            onClick={handleLogin} 
+            style={{ padding: '18px 48px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 100, color: 'white', fontSize: 18, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.4)' }}
+          >
             开始使用 →
           </button>
         </main>
@@ -616,12 +612,18 @@ export default function Home() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={() => !uploading && setShowUploadModal(false)}>
-          <div className="bg-slate-900 rounded-2xl max-w-md w-full p-8 border border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">上传书籍</h2>
+        <div 
+          onClick={() => !uploading && setShowUploadModal(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#1e293b', borderRadius: 24, maxWidth: 480, width: '100%', padding: 40, border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white' }}>上传书籍</h2>
               {!uploading && (
-                <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-white text-2xl">×</button>
+                <button onClick={() => setShowUploadModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 28, cursor: 'pointer' }}>×</button>
               )}
             </div>
 
@@ -630,30 +632,33 @@ export default function Home() {
               onDragOver={e => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition ${
-                dragOver ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-700 hover:border-slate-600'
-              }`}
+              style={{ 
+                border: `2px dashed ${dragOver ? '#10b981' : '#334155'}`, 
+                borderRadius: 20, 
+                padding: '60px 40px', 
+                textAlign: 'center', 
+                cursor: 'pointer',
+                background: dragOver ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
+                transition: 'all 0.2s'
+              }}
             >
-              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0])} />
+              <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0])} />
               
               {uploading ? (
                 <div>
-                  <div className="text-4xl mb-4 animate-pulse">⏳</div>
-                  <p className="text-lg mb-4">上传中...</p>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden max-w-xs mx-auto">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all" style={{ width: uploadProgress + '%' }} />
-                  </div>
+                  <div style={{ fontSize: 48, marginBottom: 16, animation: 'pulse 1s infinite' }}>⏳</div>
+                  <p style={{ fontSize: 16, color: '#94a3b8' }}>上传中...</p>
                 </div>
               ) : (
                 <div>
-                  <div className="text-5xl mb-4">📄</div>
-                  <p className="text-lg font-medium">拖拽 PDF 文件到这里</p>
-                  <p className="text-slate-500 mt-2">或点击选择文件</p>
+                  <div style={{ fontSize: 56, marginBottom: 16 }}>📄</div>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: '#e2e8f0', marginBottom: 8 }}>拖拽 PDF 文件到这里</p>
+                  <p style={{ fontSize: 14, color: '#64748b' }}>或点击选择文件</p>
                 </div>
               )}
             </div>
 
-            <p className="text-center text-slate-500 text-sm mt-4">
+            <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginTop: 20 }}>
               支持 PDF 格式，单文件最大 50MB
             </p>
           </div>
@@ -662,44 +667,50 @@ export default function Home() {
 
       {/* Edit Modal */}
       {editingBook && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={() => setEditingBook(null)}>
-          <div className="bg-slate-900 rounded-2xl max-w-md w-full p-8 border border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">编辑书籍信息</h2>
-              <button onClick={() => setEditingBook(null)} className="text-slate-400 hover:text-white text-2xl">×</button>
+        <div 
+          onClick={() => setEditingBook(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#1e293b', borderRadius: 24, maxWidth: 480, width: '100%', padding: 40, border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white' }}>编辑书籍信息</h2>
+              <button onClick={() => setEditingBook(null)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 28, cursor: 'pointer' }}>×</button>
             </div>
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div>
-                <label className="block text-sm text-slate-400 mb-2">书名</label>
+                <label style={{ display: 'block', fontSize: 13, color: '#64748b', marginBottom: 8 }}>书名</label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500 transition"
+                  style={{ width: '100%', padding: '14px 16px', background: '#0f172a', border: '1px solid #334155', borderRadius: 12, color: 'white', fontSize: 14 }}
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-2">作者</label>
+                <label style={{ display: 'block', fontSize: 13, color: '#64748b', marginBottom: 8 }}>作者</label>
                 <input
                   type="text"
                   value={editAuthor}
                   onChange={(e) => setEditAuthor(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500 transition"
+                  style={{ width: '100%', padding: '14px 16px', background: '#0f172a', border: '1px solid #334155', borderRadius: 12, color: 'white', fontSize: 14 }}
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
               <button
                 onClick={() => setEditingBook(null)}
-                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium transition"
+                style={{ flex: 1, padding: '14px', background: '#334155', border: 'none', borderRadius: 12, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
               >
                 取消
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-xl font-medium transition"
+                style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', border: 'none', borderRadius: 12, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
               >
                 保存
               </button>
@@ -709,12 +720,12 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-6 text-center text-slate-500">
-          <p>© 2026 妙读 · AI 智能阅读助手</p>
-          <p className="mt-2 text-sm">
-            <span className="opacity-50">Powered by </span>
-            <span className="text-emerald-500">OpenClaw</span>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '40px 0', marginTop: 80 }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px', textAlign: 'center', color: '#475569' }}>
+          <p style={{ marginBottom: 8 }}>© 2026 妙读 · AI 智能阅读助手</p>
+          <p style={{ fontSize: 13 }}>
+            <span style={{ opacity: 0.5 }}>Powered by </span>
+            <span style={{ color: '#10b981' }}>OpenClaw</span>
           </p>
         </div>
       </footer>
